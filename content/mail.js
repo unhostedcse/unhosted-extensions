@@ -1,56 +1,50 @@
 
 function Mail(){
+    
+    
           
     Mail.prototype.connect = function(obj,evt,comm){
         //var display=dis;
         var usrObject=obj;
         var commands = comm;
         var noCommand=0;
-        var transport;  
+        var transport;
+        
         var listener = {
             response: "",
+            match: /\* OK/,
+            status: "started",
+            
+            //cmd:[/\r\n/,'start'],
             onStartRequest: function(request, context) {},
             onStopRequest: function(request, context, status) {            
             },
             onDataAvailable: function(request, context, inputStream, offset, count) {                
-                //alert(bStream.readBytes(count));
-                if(usrObject.sec=="tls") {
-                    var si = Mail.transport.securityInfo;
-                    si.QueryInterface(Components.interfaces.nsISSLSocketControl);
-                    si.StartTLS();
-                }
-        
+                
+                //var cmd=this.cmd;
                 var res=bStream.readBytes(count);
                 Mail.respond=res;                
-                Mail.prototype.sendResult(evt,res);                
-                //alert(res);                
-                if (res.match(/Gimap/g)) {                    
-                    try {
-                        //var dns = Components.classes["@mozilla.org/network/dns-service;1"].getService(Components.interfaces.nsIDNSService);                                            
-                        //Mail.request="tag login nilushan100@gmail.com nilushan17806";
-                        //Mail.request="tag login "+usrObject.username+" "+usrObject.password;
-                        //alert("request "+this.request);
-                        //Mail.prototype.write();
-                        //Mail.write();   
-                    } catch(e) {
-                        alert(e);
+                Mail.prototype.sendResult(evt,'res: ',res);                
+                //alert(this.match+" "+this.status);
+                if (res.match && res.match(this.match) && this.status) {
+                    //alert(this.status);
+                    Mail.prototype.sendResult(evt,'status',this.status);
+                    if (this.fun) {
+                        this.fun(res);
                     }
-                }if (res.match(/authenticated/g)) {
-                    //alert(res);
-                    var c="tag LIST \"\" \"*\"";
-                    //Mail.request="tag SELECT INBOX";
-                    //var c="tag STATUS INBOX (MESSAGES)";
-                    //Mail.request=c;
-                    //Mail.prototype.write();
-                }else if(res.match(/220/g)){
-                    //alert('smtp get message: '+res);   
-                }else{
-                    //alert('new Message '+res);
-                }
+                }                               
                 
-                if (commands.length>noCommand) {
-                    Mail.request=commands[noCommand++];
-                    Mail.prototype.sendResult(evt,"SENT cmd: "+Mail.request);
+                //if (noCommand<2) {
+                if (commands[0].length>noCommand) {
+                    Mail.request=commands[0][noCommand];
+                    //Mail.request=commands[noCommand++];
+                    if (commands[3]) {                                     
+                    this.match=commands[1][noCommand];
+                    this.status=commands[2][noCommand];
+                    this.fun=commands[3][noCommand];
+                    }
+                    noCommand++;
+                    Mail.prototype.sendResult(evt,"SENT cmd: ",Mail.request);
                     Mail.prototype.write();
                 }
             }
@@ -68,6 +62,8 @@ function Mail(){
             ssl=["ssl"];            
         }else if(usrObject.sec=="tls") {
             ssl=["starttls"];
+        }else{
+            sv=0;
         }
         Mail.transport = transportService.createTransport(ssl,sv, host, port, this.getProxyInfo());
         
@@ -87,9 +83,7 @@ function Mail(){
         var pump = Components.classes["@mozilla.org/network/input-stream-pump;1"].createInstance(Components.interfaces.nsIInputStreamPump);
         pump.init(inStream, -1, -1, 0, 0, true);
         pump.asyncRead(listener, null);
-        //pump.asyncRead(this.list, null);
-        //alert('connected');      
-        
+       
     }
     
     Mail.prototype.getProxyInfo=function() {
@@ -107,8 +101,7 @@ function Mail(){
       
     }
     
-    Mail.prototype.write=function() {
-        //alert(Mail.request);
+    Mail.prototype.write=function() {        
           this.workerThread = Components.classes["@mozilla.org/thread-manager;1"].getService(Components.interfaces.nsIThreadManager).currentThread;
         try {
             var count = Mail.outStream.write(Mail.request, Mail.request.length);
@@ -125,12 +118,13 @@ function Mail(){
         }
     }
 
-    Mail.prototype.sendResult=function(evt,value){
+    Mail.prototype.sendResult=function(evt,type,value){
         evt.target.setAttribute("attribute3", "The extension");               
         var doc = evt.target.ownerDocument;               
         var AnswerEvt = doc.createElement("MyExtensionAnswer");
         
-        AnswerEvt.setAttribute("Part1", value);
+        AnswerEvt.setAttribute("type", type);
+        AnswerEvt.setAttribute("value", value);
         
         doc.documentElement.appendChild(AnswerEvt);                
         var event = doc.createEvent("HTMLEvents");
