@@ -13,6 +13,7 @@ function Mail(){
         var listener = {
             response: "",
             match: /\* OK/,
+            finish: /\r\n/,
             status: "started",
             
             //cmd:[/\r\n/,'start'],
@@ -21,17 +22,36 @@ function Mail(){
             },
             onDataAvailable: function(request, context, inputStream, offset, count) {                
                 
+                //alert(res);               
+        
                 //var cmd=this.cmd;
-                var res=bStream.readBytes(count);
-                Mail.respond=res;                
-                Mail.prototype.sendResult(evt,'res: ',res);                
+                this.response+=bStream.readBytes(count);
+                var res=this.response;
+                if (res.match(new RegExp("(^|\r\n)" + "tag" + " OK"))) {                    
+                    Mail.fun(res);
+                    this.response="";
+                }
+                
+                if (!res.match(this.finish)) {
+                    // No command to handle response or response hasn't been read fully, wait
+                    return;
+                }
+                this.response="";
+                  
+                //Mail.respond=res;                
+                //Mail.prototype.sendResult(evt,'res: ',res);                
                 //alert(this.match+" "+this.status);
                 if (res.match && res.match(this.match) && this.status) {
                     //alert(this.status);
-                    Mail.prototype.sendResult(evt,'status',this.status);
+                    
                     if (this.fun) {
-                        this.fun(res);
+                        //if (this.status.contain("mailhead")) {
+                          //  this.fun(res,this.status);                        
+                        //}else{
+                            this.fun(res,this.status);                        
+                        //}
                     }
+                    Mail.prototype.sendResult(evt,'status',this.status);
                 }                               
                 
                 //if (noCommand<2) {
@@ -42,9 +62,10 @@ function Mail(){
                     this.match=commands[1][noCommand];
                     this.status=commands[2][noCommand];
                     this.fun=commands[3][noCommand];
+                    this.finish=commands[4][noCommand];
                     }
                     noCommand++;
-                    Mail.prototype.sendResult(evt,"SENT cmd: ",Mail.request);
+                    //Mail.prototype.sendResult(evt,"SENT cmd: ",Mail.request);
                     Mail.prototype.write();
                 }
             }

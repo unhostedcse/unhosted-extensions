@@ -21,7 +21,7 @@
     <menu id="xulschoolhello-hello-menu" label="&xulschoolhello.hello.label;" accesskey="&xulschoolhello.helloMenu.accesskey;" insertafter="helpMenu">
       <menupopup>
         <menuitem id="xulschoolhello-hello-menu-item"
-          label="&xulschoolhello.hello.label;"
+          label="&xulschoolhello.hello.itemlabel;"
           accesskey="&xulschoolhello.helloItem.accesskey;"
           oncommand="XULSchoolChrome.BrowserOverlay.sayHello(event);"/>
         
@@ -34,7 +34,7 @@
       insertafter="appmenu_addons">
       <menupopup>
         <menuitem id="xulschoolhello-hello-menu-item-2"
-          label="&xulschoolhello.hello.label;"
+          label="&xulschoolhello.hello.itemlabel;"
           accesskey="&xulschoolhello.helloItem.accesskey;"
           oncommand="XULSchoolChrome.BrowserOverlay.sayHello(event);" />
         

@@ -29,7 +29,10 @@ function HtmlListner(){
                     HtmlListner.prototype.mailConnect(usrObjIMAP,evt);    
                 }else if (action=="smtp") {                
                     HtmlListner.prototype.mailConnectSMTP(usrObjSMTP,evt);
-                }                                 
+                }else if (action=="getbody") {
+                    var id=evt.target.getAttribute("msgid");
+                    HtmlListner.prototype.getBody(id,evt);
+                }
             }
         }
         document.addEventListener("MyExtensionEvent", function(e) { myExtension.myListener(e); }, false, true);
@@ -44,8 +47,8 @@ function HtmlListner(){
                           var regsize = /(RFC822.SIZE (\w+))/g; 
                           var regflag = /(FLAGS \((.*?)\))/g;
                           var getres, getid, getsize, getflag, sizes = new Array();
-                          var msg=new Array();
-                  
+                          var i=0,j=0;
+                          
                           while((getres = regexp.exec(response))){
                             getflag = regflag.exec(response);
                             var flags = getflag[2];
@@ -53,22 +56,32 @@ function HtmlListner(){
                             getid = regid.exec(response) ;
                             if (!flags.match(/Deleted/)) {
                               sizes[getid[2]] = getsize[2];
-                              msg.push({
-                                flag: flags,
-                                id:getid[2],
-                                size:getsize[2]
-                              });
-                              Mail.prototype.sendResult(evt,'mailid',getid[2]+"#"+flags);
-                            }
+                                //i++;    
+                              //Mail.prototype.sendResult(evt,'mailid',getid[2]+"#"+flags);
+                                //j++;
+                              commands=com;
+                              //commands[0].push("4 uid fetch "+getid[2]+" body[header]");
+                              //HEADER.FIELDS (<list>)
+                              commands[0].push("4 uid fetch "+getid[2]+" body[HEADER.FIELDS (from subject)]");
+                              commands[1].push(new RegExp("(^|\r\n)4 OK"));
+                              commands[2].push('mailhead#'+getid[2]+"#"+flags);
+                              commands[3].push(function(response,sta) {
+                                            var s=response.replace(/^.*\r\n|\)?\r\n.*\r\n.*\r\n$/g, "");
+                                            var from="";
+                                            Mail.prototype.sendResult(evt,'mailids',sta+"#"+s);
+                                            //alert(s);
+                                        });
+                              commands[4].push(new RegExp("(^|\r\n)"+ "4"+" "));
+                            }                            
                           }
-                          
-                          //Mail.prototype.sendResult(evt,'mailid',msg);
-                          //return sizes;
+                          //alert(i+" "+j);
                         }
         
         try {
-            var com=[["tag login "+obj.user+" "+obj.pass,"tag SELECT INBOX","a FETCH 1:* (UID RFC822.SIZE FLAGS)"],
-                    ["tag OK",new RegExp("(^|\r\n)* OK"),new RegExp("(^|\r\n)* OK")],
+            //,"a uid fetch 812 body[header]"
+            var end=new RegExp("(^|\r\n)*"+ " ");
+            var com=[["1 login "+obj.user+" "+obj.pass,"2 SELECT INBOX","3 FETCH 1:* (UID RFC822.SIZE FLAGS)"],
+                    [new RegExp("(^|\r\n)1 OK"),new RegExp("(^|\r\n)2 OK"),new RegExp("(^|\r\n)3 OK")],
                     ['login','list','fetchlist'],
                     [null,function(res){
                         //alert('calculate length');
@@ -78,6 +91,7 @@ function HtmlListner(){
                         //alert(val);
                         Mail.prototype.sendResult(evt,"no msg: ",val);
                     },fetchList]
+                    ,[new RegExp("(^|\r\n)"+ "1"+" "),new RegExp("(^|\r\n)"+ "2"+" "),new RegExp("(^|\r\n)"+ "3"+" ")]
                     ];
             //var com=["tag login "+obj.user+" "+obj.pass,"tag SELECT INBOX","tag LIST \"\" \"*\""];
             //mm.match= /\* OK/;
@@ -96,8 +110,16 @@ function HtmlListner(){
             //alert(obj.sec);
             var msg=obj.body;
             var com=[["EHLO ubuntu","AUTH LOGIN",window.btoa(obj.user),window.btoa(obj.pass),
-                     "MAIL FROM: <"+obj.user+">","RCPT TO: <"+obj.to+">",
-                     "DATA",msg+"\r\n.","QUIT" ],];
+                     "MAIL FROM: <"+obj.user+">",
+                     "RCPT TO: <"+obj.to+">",
+                     "DATA",
+                     msg+"\r\n.",
+                     "QUIT" ],
+                     [],
+                     ['connected',,,,,,,'Sent','finished'],
+                     [],
+                     []
+                     ];
             if (obj.sec=='tls') {                
                 com=["EHLO ubuntu","STARTTLS","EHLO ubuntu","AUTH LOGIN",window.btoa(obj.user),window.btoa(obj.pass),
                      "MAIL FROM: <"+obj.user+">","RCPT TO: <"+obj.to+">",
@@ -112,4 +134,27 @@ function HtmlListner(){
         }
         
     }
+    HtmlListner.prototype.getBody=function(id,evt){
+        //alert("get body "+id);
+        Mail.request="tag UID FETCH " + id + " BODY[]";
+        Mail.fun=function(res){
+            var r=res.replace(/^.*\r\n|\)?\r\n.*\r\n.*\r\n$/g, "");
+            Mail.prototype.sendResult(evt,'gotbody',r);
+            //alert(r);
+        }
+        Mail.prototype.write();
+    }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
