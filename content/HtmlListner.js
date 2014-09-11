@@ -136,7 +136,8 @@ function HtmlListner(){
     }
     HtmlListner.prototype.getBody=function(id,evt){
         //alert("get body "+id);
-        Mail.request="tag UID FETCH " + id + " BODY[]";
+        //Mail.request="tag UID FETCH " + id + " BODY[]";
+        Mail.request="tag uid fetch "+id+" (body.peek[text])";
         Mail.fun=function(res){
             var r=res.replace(/^.*\r\n|\)?\r\n.*\r\n.*\r\n$/g, "");
             Mail.prototype.sendResult(evt,'gotbody',r);
