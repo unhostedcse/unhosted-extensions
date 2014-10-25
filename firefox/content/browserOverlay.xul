@@ -4,13 +4,10 @@
 <?xml-stylesheet type="text/css" href="chrome://xulschoolhello/skin/browserOverlay.css" ?>
 
 <!DOCTYPE overlay SYSTEM "chrome://xulschoolhello/locale/browserOverlay.dtd">
-
-<overlay id="xulschoolhello-browser-overlay"  xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
+<overlay id="xulschoolhello-browser-overlay" xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
 
   <script type="application/x-javascript" src="chrome://xulschoolhello/content/browserOverlay.js" />
-  <script type="application/x-javascript" src="chrome://xulschoolhello/content/mail.js" />
-  <script type="application/x-javascript" src="chrome://xulschoolhello/content/HtmlListner.js" />
-  <script type="application/x-javascript" src="chrome://xulschoolhello/content/mainmail.js" />
+  <script type="application/x-javascript" src="chrome://xulschoolhello/content/tcp.js" />             
 
   <stringbundleset id="stringbundleset">
     <stringbundle id="xulschoolhello-string-bundle"
@@ -24,7 +21,6 @@
           label="&xulschoolhello.hello.itemlabel;"
           accesskey="&xulschoolhello.helloItem.accesskey;"
           oncommand="XULSchoolChrome.BrowserOverlay.sayHello(event);"/>
-        
       </menupopup>
     </menu>
   </menubar>
