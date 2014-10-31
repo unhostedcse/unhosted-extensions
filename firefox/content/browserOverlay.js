@@ -37,6 +37,7 @@ XULSchoolChrome.BrowserOverlay = {
         var b=JSON.parse(a);
         
         if (action=="connect") {
+          var obj=JSON.parse(evt.target.getAttribute("settings"));
           tcp.connect(obj,evt,b);
         }else{
           tcp.write(b);

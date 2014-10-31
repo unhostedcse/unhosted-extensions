@@ -26,14 +26,14 @@ TCP.prototype.connect = function(obj,evt,command){
             var response = this.response;
             this.response = "";
             if (response.match(TCP.command.responseStart)) {
-                if (TCP.command.onResponse) {
+                //if (TCP.command.onResponse) {
                     //alert("onResponse "+ TCP.command.onResponse);
-                    try{
-                        TCP.command.onResponse(response);
-                    }catch(e){
-                        alert(e);
-                    }
-                }
+                  //  try{
+                    //    TCP.command.onResponse(response);
+                    //}catch(e){
+                      //  alert(e);
+                    //}
+                //}
                 try{
                     TCP.prototype.sendResult(evt,"value",res);
                 }catch(e){
