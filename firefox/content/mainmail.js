@@ -236,6 +236,7 @@ technalxs.simplemail.SimpleMailSocks.SimpleMailSMTP = function(host, port, ssl, 
   var self = this;
   this.inheritFrom = technalxs.simplemail.SimpleMailSocks.SimpleMailSocket;
   this.inheritFrom(host, port, ssl, onClose, tls);
+  
   this.SMTPCommand = function(request, onResponse, responseStart, responseEnd) {
     this.inheritFrom = self.Command;
     this.inheritFrom(request, onResponse, responseStart || /^2/,

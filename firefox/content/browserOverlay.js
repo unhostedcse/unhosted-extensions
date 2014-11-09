@@ -23,7 +23,12 @@ XULSchoolChrome.BrowserOverlay = {
         port : 143,
         sec : "no"
       };
-    var tcp=new TCP();
+    //var tcp=new TCP();
+    //var imap=new IMAP_TCP('IMAP');
+    //var smtp=new IMAP_TCP('SMTP');
+    var imap=new Array();
+    var smtp=new Array();
+    //imap.connect(obj,null,null);
     }catch(e){
       alert(e);
     }
@@ -35,13 +40,35 @@ XULSchoolChrome.BrowserOverlay = {
         var action=evt.target.getAttribute("action");
         var a=evt.target.getAttribute("command");
         var b=JSON.parse(a);
+        var server=evt.target.getAttribute("server");
+        var conID=evt.target.getAttribute("conID");
+        //alert('conID '+conID);
         
-        if (action=="connect") {
-          var obj=JSON.parse(evt.target.getAttribute("settings"));
-          tcp.connect(obj,evt,b);
-        }else{
-          tcp.write(b);
+        if (!imap[conID]) {
+          imap[conID]=new IMAP_TCP('IMAP',conID);
         }
+        
+        //if (server=='IMAP') {        
+          if (action=="connect") {
+            var obj=JSON.parse(evt.target.getAttribute("settings"));
+            //tcp.connect(obj,evt,b);
+            imap[conID].connect(obj,evt,b);
+          }else{
+            //tcp.write(b);
+            imap[conID].write(b);
+          }        
+        //}
+        
+        /*else if (server=='SMTP') {        
+          if (action=="connect") {
+            var obj=JSON.parse(evt.target.getAttribute("settings"));
+            //tcp.connect(obj,evt,b);
+            smtp[conID].connect(obj,evt,b);
+          }else{
+            //tcp.write(b);
+            smtp[conID].write(b);
+          }        
+        }*/
         
       }catch(e){
         alert(e);

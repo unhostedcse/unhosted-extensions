@@ -1,48 +1,45 @@
 
-function TCP(){}     
-          
-TCP.prototype.connect = function(obj,evt,command){    
-  
-    var usrObject=obj;
-    //var command = comm;        
-    var transport;
-    TCP.command=command;
-    
-    var listener = {
-        response: "",            
-        
-        onStartRequest: function(request, context) {},
-        onStopRequest: function(request, context, status) {            
-        },
-        
-        onDataAvailable: function(request, context, inputStream, offset, count) {
-            this.response+=bStream.readBytes(count);
-            var res=this.response;
-            if (!TCP.command || !this.response.match(TCP.command.responseEnd)) {
-                // No command to handle response or response hasn't been read fully, wait
+function TCP(server,id){
+    this.server=server;
+    this.response="";
+    this.conID=id;
+}     
+         
+TCP.prototype.onStartRequest= function(request, context) {}
+TCP.prototype.onStopRequest= function(request, context, status) {}
+
+TCP.prototype.onDataAvailable= function(request, context, inputStream, offset, count) {
+            //alert('data');
+            this.response+=this.bStream.readBytes(count);
+            
+            if (this.command){
+                var responseEnd=new RegExp(this.command.responseEnd);
+                var responseStart=new RegExp(this.command.responseStart);
+            }
+            
+            if (!this.command || !this.response.match(responseEnd)) {
                 return;
             }
             
             var response = this.response;
             this.response = "";
-            if (response.match(TCP.command.responseStart)) {
-                //if (TCP.command.onResponse) {
-                    //alert("onResponse "+ TCP.command.onResponse);
-                  //  try{
-                    //    TCP.command.onResponse(response);
-                    //}catch(e){
-                      //  alert(e);
-                    //}
-                //}
+            if (response.match(responseStart)) {
                 try{
-                    TCP.prototype.sendResult(evt,"value",res);
+                    this.sendResult(this.evt,"value",response);
                 }catch(e){
                     alert(e);
                 }
+            }else {
+                alert('error');
             }
-           
-        }
-    };              
+}
+
+TCP.prototype.connect = function(obj,evt,command){    
+  
+    var usrObject=obj;
+    var transport;
+    this.command=command;
+    this.evt=evt;
 
     var host=usrObject.host;
     var port=usrObject.port;
@@ -59,20 +56,16 @@ TCP.prototype.connect = function(obj,evt,command){
         sv=0;
     }
     
-    TCP.transport = transportService.createTransport(ssl,sv, host, port, this.getProxyInfo());
+    this.transport = transportService.createTransport(ssl,sv, host, port, this.getProxyInfo());
    
-    var outStream = TCP.transport.openOutputStream(0, 1024*1024, 1);
-    var inStream = TCP.transport.openInputStream(0, 1024*1024, 1);      
-    var bStream = Components.classes["@mozilla.org/binaryinputstream;1"].createInstance(Components.interfaces.nsIBinaryInputStream);
+    this.outStream = this.transport.openOutputStream(0, 1024*1024, 1);
+    this.inStream = this.transport.openInputStream(0, 1024*1024, 1);      
+    this.bStream = Components.classes["@mozilla.org/binaryinputstream;1"].createInstance(Components.interfaces.nsIBinaryInputStream);
             
-    TCP.outStream=outStream;
-    TCP.request="Ruksan req";
-    
-    bStream.setInputStream(inStream);
+    this.bStream.setInputStream(this.inStream);
     var pump = Components.classes["@mozilla.org/network/input-stream-pump;1"].createInstance(Components.interfaces.nsIInputStreamPump);
-    pump.init(inStream, -1, -1, 0, 0, true);
-    pump.asyncRead(listener, null);
-   
+    pump.init(this.inStream, -1, -1, 0, 0, true);
+    pump.asyncRead(this, null);
 }
 
 TCP.prototype.getProxyInfo=function() {
@@ -91,20 +84,20 @@ TCP.prototype.getProxyInfo=function() {
 }
 
 TCP.prototype.write=function(cmd) {    
-    TCP.command=cmd;
+    this.command=cmd;
     request=cmd.request;
     //alert("request: "+TCP.command.request);
     this.workerThread = Components.classes["@mozilla.org/thread-manager;1"].getService(Components.interfaces.nsIThreadManager).currentThread;
     try {
-        var count = TCP.outStream.write(request, request.length);
+        var count = this.outStream.write(request, request.length);
         if (count < request.length) {
           request = request.substr(count);
-          TCP.outStream.QueryInterface(Components.interfaces.nsIAsyncOutputStream);
-          TCP.outStream.asyncWait({ onOutputStreamReady: function() {
-                                TCP.write();
+          this.outStream.QueryInterface(Components.interfaces.nsIAsyncOutputStream);
+          this.outStream.asyncWait({ onOutputStreamReady: function() {
+                                this.write();
                               }}, 0, 0, this.workerThread); 
         }
-        else TCP.outStream.write("\r\n", 2);
+        else this.outStream.write("\r\n", 2);
     }catch(e) {
         alert("connection Failed"+e);
     }
@@ -116,6 +109,8 @@ TCP.prototype.sendResult=function(evt,type,value){
         var AnswerEvt = doc.createElement("MyExtensionAnswer");
         
         AnswerEvt.setAttribute("type", type);
+        AnswerEvt.setAttribute("server",this.server);
+        AnswerEvt.setAttribute("conID",this.conID);
         AnswerEvt.setAttribute("value", value);
         
         doc.documentElement.appendChild(AnswerEvt);                
