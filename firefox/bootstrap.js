@@ -1,3 +1,115 @@
+const { classes: Cc, interfaces: Ci, utils: Cu } = Components;
+Cu.import('resource://gre/modules/Services.jsm');
+
+var imap=new Array();
+
+function install() {}
+ 
+function uninstall() {}
+
+function startup(data, reason) {
+  Services.prompt.alert(null, "Restartless Demo", "Unhosted Starting!"); 
+  try{
+    watchWindows(main, "navigator:browser");  
+  }catch(e){
+    Services.prompt.alert(null, "Unhosted Error",e); 
+  }  
+}
+
+function myListener(evt){
+  //Services.prompt.alert(null, "Restartless Demo",evt); 
+  
+  try{
+    //Services.prompt.alert(null, "Restartless Demo", "unhosted got");
+    var action=evt.target.getAttribute("action");
+    var a=evt.target.getAttribute("command");
+    var b=JSON.parse(a);
+    var server=evt.target.getAttribute("server");
+    var conID=evt.target.getAttribute("conID");
+
+    if (!imap[conID]) {
+      imap[conID]=new TCP('IMAP',conID);
+    }
+
+    if (action=="connect") {
+      var obj=JSON.parse(evt.target.getAttribute("settings"));
+      imap[conID].connect(obj,evt,b);
+    }else{
+      imap[conID].write(b);
+    }        
+
+  }catch(e){
+    Services.prompt.alert(null, "Unhosted Error",e);
+  }
+}
+
+function main(win) {
+  //Services.prompt.alert(null, "Restartless Demo",win); //
+  win.document.addEventListener("MyExtensionEvent", function(e) { myListener(e); }, false, true);  
+}
+ 
+function shutdown(data, reason) {
+   //Services.prompt.alert(null, "Restartless Demo", "Goodbye world.");
+}
+
+function watchWindows(callback, winType) {
+  // Wrap the callback in a function that ignores failures
+  function watcher(window) {
+    try {
+      callback(window);
+    }
+    catch(ex) {}
+  }
+
+  // Add functionality to existing windows
+  runOnWindows(callback, winType);
+
+  // Watch for new browser windows opening then wait for it to load
+  function windowWatcher(subject, topic) {
+    if (topic == "domwindowopened")
+      runOnLoad(subject, watcher, winType);
+  }
+  Services.ww.registerNotification(windowWatcher);
+
+  // Make sure to stop watching for windows if we're unloading
+  //unload(function() Services.ww.unregisterNotification(windowWatcher));
+}
+
+function runOnLoad(window, callback, winType) {
+  // Listen for one load event before checking the window type
+  window.addEventListener("load", function() {
+    window.removeEventListener("load", arguments.callee, false);
+
+    // Now that the window has loaded, only handle browser windows
+    if (window.document.documentElement.getAttribute("windowtype") == winType)
+      callback(window);
+  }, false);
+}
+
+
+function runOnWindows(callback, winType) {
+  // Wrap the callback in a function that ignores failures
+  function watcher(window) {
+    try {
+      callback(window);
+    }
+    catch(ex) {}
+  }
+
+  // Add functionality to existing windows
+  let browserWindows = Services.wm.getEnumerator(winType);
+  while (browserWindows.hasMoreElements()) {
+    // Only run the watcher immediately if the browser is completely loaded
+    let browserWindow = browserWindows.getNext();
+    if (browserWindow.document.readyState == "complete")
+      watcher(browserWindow);
+    // Wait for the window to load before continuing
+    else
+      runOnLoad(browserWindow, watcher, winType);
+  }
+}
+
+////////////////////////////////////////////////////////////
 
 function TCP(server,id){
     this.server=server;
@@ -71,7 +183,7 @@ TCP.prototype.connect = function(obj,evt,command){
 TCP.prototype.getProxyInfo=function() {
   var prefs = Components.classes["@mozilla.org/preferences-service;1"].getService(Components.interfaces.nsIPrefService);
 
-  if (prefs.getIntPref("network.proxy.type") == 1) { // Manual proxy configuration
+  if (prefs.getIntPref && prefs.getIntPref("network.proxy.type") == 1) { // Manual proxy configuration
     var proxyHost = prefs.getCharPref("network.proxy.socks");
     var proxyPort = prefs.getIntPref("network.proxy.socks_port");
     if (proxyHost && proxyPort) {
