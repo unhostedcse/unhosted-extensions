@@ -1,0 +1,10 @@
+{
+  "appName": {
+    "message": "Unhosted Prototype",
+    "description": "The name of the application"
+  },
+  "appDescription": {
+    "message": "Unhosted Prototype",
+    "description": "The description of the application"
+  }
+}
