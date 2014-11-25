@@ -22,6 +22,12 @@ function myListener(evt){
   try{
     //Services.prompt.alert(null, "Restartless Demo", "unhosted got");
     var action=evt.target.getAttribute("action");
+    
+    if(action=="test_connect"){
+      TCP.prototype.sendResult(evt,"value",'test_connect_pass');
+      return;
+    }
+    
     var a=evt.target.getAttribute("command");
     var b=JSON.parse(a);
     var server=evt.target.getAttribute("server");
@@ -35,7 +41,7 @@ function myListener(evt){
       var obj=JSON.parse(evt.target.getAttribute("settings"));
       imap[conID].connect(obj,evt,b);
     }else{
-      imap[conID].write(b);
+      imap[conID].write(b,action);
     }        
 
   }catch(e){
@@ -123,6 +129,7 @@ TCP.prototype.onStopRequest= function(request, context, status) {}
 TCP.prototype.onDataAvailable= function(request, context, inputStream, offset, count) {
             //alert('data');
             this.response+=this.bStream.readBytes(count);
+            //Services.prompt.alert(null,"extension response",this.response);
             
             if (this.command){
                 var responseEnd=new RegExp(this.command.responseEnd);
@@ -139,10 +146,12 @@ TCP.prototype.onDataAvailable= function(request, context, inputStream, offset, c
                 try{
                     this.sendResult(this.evt,"value",response);
                 }catch(e){
-                    alert(e);
+                    //alert(e);
+                    Services.prompt.alert(null,"connection Failed",e);
                 }
             }else {
-                alert('error');
+                //alert('error');
+                Services.prompt.alert(null,"connection Failed",'error');
             }
 }
 
@@ -195,7 +204,19 @@ TCP.prototype.getProxyInfo=function() {
   
 }
 
-TCP.prototype.write=function(cmd) {    
+TCP.prototype.write=function(cmd,action) {
+  
+    if (action && action=='authTls') {
+      try {
+        var sc=this.transport.securityInfo;
+        sc.QueryInterface(Components.interfaces.nsISSLSocketControl);
+        sc.StartTLS();
+      } catch(e) {
+        Services.prompt.alert(null,"connection Failed",e); 
+      }      
+      
+    }
+    
     this.command=cmd;
     request=cmd.request;
     //alert("request: "+TCP.command.request);
@@ -211,8 +232,19 @@ TCP.prototype.write=function(cmd) {
         }
         else this.outStream.write("\r\n", 2);
     }catch(e) {
-        alert("connection Failed"+e);
+        Services.prompt.alert(null,"connection Failed",e); 
     }
+    
+    /*try{
+      if (request=="STARTTLS") {
+        var si = this.transport.securityInfo;
+        si.QueryInterface(Components.interfaces.nsISSLSocketControl);
+        si.StartTLS();
+      }
+    }catch(e){
+      Services.prompt.alert(null, "Unhosted Error",e); 
+    }*/
+    
 }
   
 TCP.prototype.sendResult=function(evt,type,value){
