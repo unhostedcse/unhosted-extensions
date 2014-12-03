@@ -8,7 +8,10 @@ function install() {}
 function uninstall() {}
 
 function startup(data, reason) {
-  Services.prompt.alert(null, "Restartless Demo", "Unhosted Starting!"); 
+  Components.utils.import("resource://gre/modules/devtools/Console.jsm");
+  console.log("Unhosted Starting....."); //output messages to the console
+  
+  //Services.prompt.alert(null, "Restartless Demo", "Unhosted Starting!"); 
   try{
     watchWindows(main, "navigator:browser");  
   }catch(e){
@@ -32,6 +35,8 @@ function myListener(evt){
     var b=JSON.parse(a);
     var server=evt.target.getAttribute("server");
     var conID=evt.target.getAttribute("conID");
+    
+    console.log("Unhosted action: "+action);
 
     if (!imap[conID]) {
       imap[conID]=new TCP('IMAP',conID);
@@ -129,6 +134,7 @@ TCP.prototype.onStopRequest= function(request, context, status) {}
 TCP.prototype.onDataAvailable= function(request, context, inputStream, offset, count) {
             //alert('data');
             this.response+=this.bStream.readBytes(count);
+            console.log("Unhosted response: "+this.response);
             //Services.prompt.alert(null,"extension response",this.response);
             
             if (this.command){
@@ -151,7 +157,7 @@ TCP.prototype.onDataAvailable= function(request, context, inputStream, offset, c
                 }
             }else {
                 //alert('error');
-                Services.prompt.alert(null,"connection Failed",'error');
+                Services.prompt.alert(null,"connection Failed",'error response: '+response);
             }
 }
 
