@@ -8,8 +8,8 @@ function install() {}
 function uninstall() {}
 
 function startup(data, reason) {
-  Components.utils.import("resource://gre/modules/devtools/Console.jsm");
-  console.log("Unhosted Starting....."); //output messages to the console
+  //Components.utils.import("resource://gre/modules/devtools/Console.jsm");
+  //console.log("Unhosted Starting....."); //output messages to the console
   
   //Services.prompt.alert(null, "Restartless Demo", "Unhosted Starting!"); 
   try{
@@ -36,7 +36,7 @@ function myListener(evt){
     var server=evt.target.getAttribute("server");
     var conID=evt.target.getAttribute("conID");
     
-    console.log("Unhosted action: "+action);
+    //console.log("Unhosted action: "+action);
 
     if (!imap[conID]) {
       imap[conID]=new TCP('IMAP',conID);
@@ -46,7 +46,7 @@ function myListener(evt){
       var obj=JSON.parse(evt.target.getAttribute("settings"));
       imap[conID].connect(obj,evt,b);
     }else{
-      imap[conID].write(b,action);
+      imap[conID].write(b,action);           
     }        
 
   }catch(e){
@@ -134,7 +134,7 @@ TCP.prototype.onStopRequest= function(request, context, status) {}
 TCP.prototype.onDataAvailable= function(request, context, inputStream, offset, count) {
             //alert('data');
             this.response+=this.bStream.readBytes(count);
-            console.log("Unhosted response: "+this.response);
+            //console.log("Unhosted response: "+this.response);
             //Services.prompt.alert(null,"extension response",this.response);
             
             if (this.command){
@@ -152,11 +152,9 @@ TCP.prototype.onDataAvailable= function(request, context, inputStream, offset, c
                 try{
                     this.sendResult(this.evt,"value",response);
                 }catch(e){
-                    //alert(e);
                     Services.prompt.alert(null,"connection Failed",e);
                 }
             }else {
-                //alert('error');
                 Services.prompt.alert(null,"connection Failed",'error response: '+response);
             }
 }
@@ -210,18 +208,7 @@ TCP.prototype.getProxyInfo=function() {
   
 }
 
-TCP.prototype.write=function(cmd,action) {
-  
-    if (action && action=='authTls') {
-      try {
-        var sc=this.transport.securityInfo;
-        sc.QueryInterface(Components.interfaces.nsISSLSocketControl);
-        sc.StartTLS();
-      } catch(e) {
-        Services.prompt.alert(null,"connection Failed",e); 
-      }      
-      
-    }
+TCP.prototype.write=function(cmd,action) {   
     
     this.command=cmd;
     request=cmd.request;
@@ -235,26 +222,28 @@ TCP.prototype.write=function(cmd,action) {
           this.outStream.asyncWait({ onOutputStreamReady: function() {
                                 this.write();
                               }}, 0, 0, this.workerThread); 
+        }else{
+          this.outStream.write("\r\n", 2);                           
         }
-        else this.outStream.write("\r\n", 2);
     }catch(e) {
         Services.prompt.alert(null,"connection Failed",e); 
-    }
-    
-    /*try{
-      if (request=="STARTTLS") {
-        var si = this.transport.securityInfo;
-        si.QueryInterface(Components.interfaces.nsISSLSocketControl);
-        si.StartTLS();
-      }
-    }catch(e){
-      Services.prompt.alert(null, "Unhosted Error",e); 
-    }*/
+    }    
     
 }
   
 TCP.prototype.sendResult=function(evt,type,value){
-        //evt.target.setAttribute("attribute3", "The extension");               
+        //evt.target.setAttribute("attribute3", "The extension");
+        
+        if(this.command && this.command.request && this.command.request=='STARTTLS'){
+            try {
+              var sc=this.transport.securityInfo;
+              sc.QueryInterface(Components.interfaces.nsISSLSocketControl);
+              sc.StartTLS();
+            } catch(e) {
+              Services.prompt.alert(null,"connection Failed",e); 
+            }              
+        }
+    
         var doc = evt.target.ownerDocument;               
         var AnswerEvt = doc.createElement("MyExtensionAnswer");
         
