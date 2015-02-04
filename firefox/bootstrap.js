@@ -227,7 +227,7 @@ TCP.prototype.write=function(cmd,action) {
         }
     }catch(e) {
         Services.prompt.alert(null,"connection Failed",e); 
-    }    
+    }
     
 }
   
